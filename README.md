@@ -14,17 +14,17 @@ algorithms implemented from scratch as a tested Python package
 sealed test set, baselines, and uncertainty, served through a small
 reproducible system (versioned artifact, API, logs, CI).
 
-## Status — milestones 1, 2 and 2A done
+## Status — milestones 1, 2, 2A done; milestone 3 under way
 
 | Area | State |
 | --- | --- |
 | Product and data contract | [`docs/PRODUCT_CONTRACT.md`](docs/PRODUCT_CONTRACT.md), [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md), [ADR 0002](docs/decisions/0002-waze-churn-dataset.md) |
 | Data boundary | `WazeChurnAdapter`: checksum-pinned CSV, schema and range validation, 700 unlabeled users dropped; constructed CI fixture |
-| Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting) and `KNearestNeighborsClassifier` (blocked search for large data) |
+| Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting), `KNearestNeighborsClassifier` (blocked search for large data), and `ClassificationTree` (CART with Gini/entropy, stopping rules, class weights, feature sampling, rule export) |
 | Evaluation | Shared holdout split, bootstrap intervals, F-beta threshold selection, `ThresholdedClassifier` |
 | Tests | Analytic cases, gradient checks, failure modes, differential tests against scikit-learn, data-boundary tests |
-| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb) (main); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
-| Next | Decision tree and ensembles, engagement segmentation (k-means, PCA), model promotion into the API |
+| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
+| Next | Ensembles (random forest, boosting), engagement segmentation (k-means, PCA), cross-family model selection, promotion into the API |
 
 ### Headline result (sealed test set, 3,575 users)
 
@@ -40,6 +40,14 @@ It relies mostly on active days, driving days, and tenure, so it misses
 nearly all churners who were still active on more than 20 days that month.
 Activity and churn are measured in the same month, so these results show
 disengagement in progress, not early warning.
+
+**Decision tree (development data only, test set kept sealed).** The best
+student tree (depth 4, at least 100 users per leaf) reaches cross-validated AP
+about 0.35 and loses to softmax regression on all 15 paired folds (by about
+0.04). Churn risk is close to additive in activity and tenure, so a single
+tree's thresholds add variance without adding signal. Its depth-3 rules are
+still a readable summary for a PM; the "inactive, newer, heavy driver" segment
+churns at about 48%, but it reappears in only 17 of 30 bootstrap refits.
 
 ### Getting the data
 
@@ -95,7 +103,8 @@ probabilities = model.predict_proba(X_test)
 
 ## Roadmap
 
-1. Decision tree from scratch (lecture 14): does it recover active churners?
+1. ~~Decision tree from scratch (lecture 14)~~ done: it does not recover
+   active churners and does not beat the linear baseline.
 2. Ensembles (lecture 15): random forest and boosting, with the earlier
    project's XGBoost as a trusted reference.
 3. Engineered ratio features, implemented and tested in the package.

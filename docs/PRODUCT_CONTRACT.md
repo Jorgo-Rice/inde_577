@@ -39,7 +39,7 @@ Details are in [`DATASET_CARD.md`](DATASET_CARD.md).
 | Linear regression | — | Excluded | Every continuous candidate target (driving days, km driven, sessions) is a usage measurement that restates the other features, so predicting it answers no user question. The template exemplar remains as verified code. | ADR 0002 |
 | Logistic regression | Churn risk | Yes | Churn falls monotonically with activity and tenure; a linear log-odds model is a transparent baseline with readable coefficients | `SoftmaxRegression`, notebook 02 |
 | Nearest neighbors | Churn risk | Yes | Tests whether *similar usage* implies similar risk without a linearity assumption | `KNearestNeighborsClassifier`, notebook 02 |
-| Decision trees | Churn risk | Yes (next) | Can capture thresholds and interactions such as tenure × activity | Planned (lecture 14) |
+| Decision trees | Churn risk | Yes | Can capture thresholds and interactions such as tenure × activity; the data turned out to be close to additive, so the tree is kept for readable rules, not promoted | `ClassificationTree`, notebook 03 |
 | Ensembles | Churn risk | Yes (next) | Bagging and boosting reduce single-tree variance; the earlier project's XGBoost becomes a trusted reference | Planned (lecture 15) |
 | Support vector machines and kernels | Churn risk | Optional | Applicable, but kernel SVMs scale poorly to 10k+ rows and give no calibrated probabilities without extra fitting | Decide after trees |
 | Neural networks | Churn risk | Optional | Applicable; only worth adding if trees show non-linear signal that linear models miss | Decide after trees |
