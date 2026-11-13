@@ -6,6 +6,10 @@ from collections.abc import Callable
 from typing import Any
 
 from dsm_project.algorithms.linear import BatchLinearRegressor
+from dsm_project.algorithms.student import (
+    KNearestNeighborsClassifier,
+    SoftmaxRegression,
+)
 
 EstimatorFactory = Callable[..., Any]
 
@@ -14,6 +18,8 @@ EstimatorFactory = Callable[..., Any]
 # this mapping.
 STUDENT_ALGORITHMS: dict[str, EstimatorFactory] = {
     "batch_linear_regression": BatchLinearRegressor,
+    "k_nearest_neighbors": KNearestNeighborsClassifier,
+    "softmax_regression": SoftmaxRegression,
 }
 
 

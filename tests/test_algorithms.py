@@ -55,14 +55,18 @@ def test_estimators_reject_use_before_fit() -> None:
 
 
 def test_student_registry_exposes_only_explicit_implementations() -> None:
-    assert registered_student_algorithms() == ("batch_linear_regression",)
+    assert registered_student_algorithms() == (
+        "batch_linear_regression",
+        "k_nearest_neighbors",
+        "softmax_regression",
+    )
     estimator = create_student_algorithm(
         "batch_linear_regression", learning_rate=0.05
     )
     assert isinstance(estimator, BatchLinearRegressor)
 
     with pytest.raises(ValueError, match="Unknown student algorithm"):
-        create_student_algorithm("logistic_regression")
+        create_student_algorithm("not_a_registered_algorithm")
 
 
 def test_batch_linear_regressor_composes_with_sklearn_pipeline() -> None:
@@ -75,3 +79,15 @@ def test_batch_linear_regressor_composes_with_sklearn_pipeline() -> None:
 
     assert pipeline.predict(features).shape == targets.shape
     assert pipeline.get_params()["batchlinearregressor__learning_rate"] == 0.05
+
+
+def test_baselines_are_cloneable_for_cross_validation() -> None:
+    from sklearn.model_selection import cross_val_score
+
+    features = np.arange(20, dtype=float).reshape(-1, 1)
+    labels = np.array([0] * 12 + [1] * 8)
+    scores = cross_val_score(
+        MajorityClassifier(), features, labels, cv=4, scoring="balanced_accuracy"
+    )
+
+    np.testing.assert_allclose(scores, 0.5)

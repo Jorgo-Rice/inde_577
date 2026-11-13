@@ -6,6 +6,7 @@ from typing import Self
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
 
 def _validated_rows(features: ArrayLike) -> NDArray[np.float64]:
@@ -17,8 +18,12 @@ def _validated_rows(features: ArrayLike) -> NDArray[np.float64]:
     return array
 
 
-class MeanRegressor:
-    """Predict the training-target mean for every observation."""
+class MeanRegressor(RegressorMixin, BaseEstimator):
+    """Predict the training-target mean for every observation.
+
+    Inheriting the scikit-learn bases lets the baseline be cloned inside
+    cross-validation exactly like every other candidate.
+    """
 
     def fit(self, features: ArrayLike, targets: ArrayLike) -> Self:
         """Learn the mean after validating row alignment."""
@@ -44,8 +49,12 @@ class MeanRegressor:
         return np.full(array.shape[0], self.mean_, dtype=float)
 
 
-class MajorityClassifier:
-    """Predict the most frequent training label for every observation."""
+class MajorityClassifier(ClassifierMixin, BaseEstimator):
+    """Predict the most frequent training label for every observation.
+
+    Inheriting the scikit-learn bases lets the baseline be cloned inside
+    cross-validation exactly like every other candidate.
+    """
 
     def fit(self, features: ArrayLike, targets: ArrayLike) -> Self:
         """Learn the modal label using deterministic tie breaking."""
@@ -55,6 +64,7 @@ class MajorityClassifier:
         if target_array.shape != (array.shape[0],):
             raise ValueError("targets must contain one label per observation")
         labels, counts = np.unique(target_array, return_counts=True)
+        self.classes_ = labels
         self.label_ = labels[int(np.argmax(counts))]
         self.n_features_in_ = array.shape[1]
         return self
