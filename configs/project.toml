@@ -1,0 +1,35 @@
+# Versioned project configuration.
+#
+# DEVELOPMENT SLICE: the wine-chemistry data below is a stand-in used to build
+# and verify the student algorithms end to end. It will be replaced by the
+# project's own dataset once that choice is approved (see README "Status").
+
+[project]
+name = "Wine cultivar verification (development slice)"
+intended_user = "A quality-control analyst checking a wine's declared cultivar against its lab chemistry"
+
+[dataset]
+adapter = "example_wine"
+name = "Wine recognition"
+source = "UCI Machine Learning Repository (Forina et al., 1991) via scikit-learn load_wine"
+license = "CC BY 4.0 (UCI Machine Learning Repository)"
+observation_unit = "one chemically analyzed wine sample from one of three cultivars"
+identifier = "observation_id"
+
+[tasks.regression]
+name = "estimate alcohol concentration"
+target = "alcohol"
+metric = "root_mean_squared_error"
+
+[tasks.classification]
+name = "identify cultivar from chemistry"
+target = "cultivar"
+metric = "balanced_accuracy"
+
+[tasks.unsupervised]
+name = "investigate recurring chemistry profiles"
+metric = "silhouette_and_stability"
+
+[split]
+random_state = 438
+test_fraction = 0.25

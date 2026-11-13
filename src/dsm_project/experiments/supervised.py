@@ -122,18 +122,37 @@ def _candidate(model_name: str, kind: TaskKind, seed: int) -> BaseEstimator:
     return make_pipeline(StandardScaler(), estimator)
 
 
-def evaluate_supervised_estimator(
+@dataclass(frozen=True)
+class SupervisedSplit:
+    """Development (fit and tune) and sealed final-test partitions."""
+
+    train_features: pd.DataFrame
+    test_features: pd.DataFrame
+    train_targets: pd.Series
+    test_targets: pd.Series
+
+    def __iter__(self):  # allows ``train_x, test_x, train_y, test_y = split``
+        yield from (
+            self.train_features,
+            self.test_features,
+            self.train_targets,
+            self.test_targets,
+        )
+
+
+def split_supervised_task(
     dataset: ProjectDataset,
     config: ProjectConfig,
     *,
     task_name: str,
-    estimator_name: str,
-    estimator: BaseEstimator,
-) -> ExperimentResult:
-    """Fit an estimator through the shared leakage-resistant example path.
+) -> SupervisedSplit:
+    """Return the configured development/final-test split for one task.
 
-    Student-owned estimators and trusted references use this same boundary so
-    that data partitioning and metric calculation do not silently differ.
+    This is the single place where the holdout boundary is drawn. Notebooks
+    use the development partition for cross-validation and model selection
+    and pass the same configuration to ``evaluate_supervised_estimator`` for
+    the one final evaluation, so both see identical rows.
+    Classification splits are stratified by the target.
     """
 
     try:
@@ -154,6 +173,27 @@ def evaluate_supervised_estimator(
         random_state=seed,
         stratify=stratify,
     )
+    return SupervisedSplit(train_x, test_x, train_y, test_y)
+
+
+def evaluate_supervised_estimator(
+    dataset: ProjectDataset,
+    config: ProjectConfig,
+    *,
+    task_name: str,
+    estimator_name: str,
+    estimator: BaseEstimator,
+) -> ExperimentResult:
+    """Fit an estimator through the shared leakage-resistant example path.
+
+    Student-owned estimators and trusted references use this same boundary so
+    that data partitioning and metric calculation do not silently differ.
+    """
+
+    train_x, test_x, train_y, test_y = split_supervised_task(
+        dataset, config, task_name=task_name
+    )
+    task = dataset.tasks[task_name]  # name validated by split_supervised_task
     estimator.fit(train_x, train_y)
     predictions = estimator.predict(test_x)
     if task.kind is TaskKind.REGRESSION:
