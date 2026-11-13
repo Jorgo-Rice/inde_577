@@ -6,32 +6,47 @@ Learning** (Fall 2026, Dr. Randy R. Davila), built on the course
 
 **Author:** Jorgo Qirjaj
 
-The project is one coherent machine-learning product: course algorithms
-implemented from scratch as a tested Python package (`src/dsm_project`), used
-in self-contained case-study notebooks (`notebooks/`) that answer a real
-question on a chosen dataset, and served through a small reproducible system
-(versioned artifact, API, logs, CI).
+**Waze churn risk.** Which Waze users are about to churn, and how many of
+them can a retention campaign of a given size reach? This project rebuilds
+an earlier churn analysis (RCEL 506) under this course's standards:
+algorithms implemented from scratch as a tested Python package
+(`src/dsm_project`), self-contained case-study notebooks (`notebooks/`), a
+sealed test set, baselines, and uncertainty, served through a small
+reproducible system (versioned artifact, API, logs, CI).
 
-## Status — milestone 2A (first vertical slice)
+## Status — milestones 1, 2 and 2A done
 
 | Area | State |
 | --- | --- |
-| Template verified locally | Done — all original tests pass |
-| Student algorithms | **`SoftmaxRegression`** (multinomial logistic regression, batch gradient descent, L2) and **`KNearestNeighborsClassifier`** (Euclidean/Manhattan, uniform/distance voting), registered in the student registry |
-| Tests | Analytic cases, finite-difference gradient check, failure modes, and differential tests against scikit-learn (`tests/test_student_algorithms.py`) |
-| Evaluation helpers | Shared holdout split (`split_supervised_task`) and bootstrap confidence intervals (`bootstrap_metric_interval`) |
-| Case study | [`notebooks/01-wine-cultivar-softmax-vs-knn.ipynb`](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb): cross-validated model selection, one sealed test evaluation, failure analysis, and a promotion decision |
-| Dataset | **Stand-in.** The UCI wine data are used to build and verify the pipeline. The project's own dataset is still to be chosen |
-| API / artifact | Still serving the template's reference model; student model promotion is a later milestone |
+| Product and data contract | [`docs/PRODUCT_CONTRACT.md`](docs/PRODUCT_CONTRACT.md), [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md), [ADR 0002](docs/decisions/0002-waze-churn-dataset.md) |
+| Data boundary | `WazeChurnAdapter`: checksum-pinned CSV, schema and range validation, 700 unlabeled users dropped; constructed CI fixture |
+| Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting) and `KNearestNeighborsClassifier` (blocked search for large data) |
+| Evaluation | Shared holdout split, bootstrap intervals, F-beta threshold selection, `ThresholdedClassifier` |
+| Tests | Analytic cases, gradient checks, failure modes, differential tests against scikit-learn, data-boundary tests |
+| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb) (main); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
+| Next | Decision tree and ensembles, engagement segmentation (k-means, PCA), model promotion into the API |
 
-### Headline result (stand-in data)
+### Headline result (sealed test set, 3,575 users)
 
-Both student classifiers reach **0.98 balanced accuracy** on 45 sealed test
-wines (95% bootstrap CI ≈ 0.94–1.00) against a 0.33 majority baseline. Both
-match their scikit-learn references exactly. The one error is the same sample
-for every model, in a known chemical overlap between two cultivars. Softmax
-regression gave that sample only 0.59 probability, which supports a
-"confirm automatically or send to review" design.
+| Model | Average precision | Recall at frozen threshold | Precision | Users flagged |
+| --- | --- | --- | --- | --- |
+| Baseline (always "retained") | 0.177 | 0.00 | — | 0% |
+| **Student softmax regression** | **0.386** | **0.855** (95% CI 0.83–0.88) | 0.27 | 56% |
+| Student k-NN (k = 301) | 0.366 | 0.828 | 0.27 | 54% |
+
+The student softmax model ranks users about twice as well as random. At a 20%
+outreach budget it reaches about 45% of churners at about 40% precision.
+It relies mostly on active days, driving days, and tenure, so it misses
+nearly all churners who were still active on more than 20 days that month.
+Activity and churn are measured in the same month, so these results show
+disengagement in progress, not early warning.
+
+### Getting the data
+
+The CSV is not committed (license to be confirmed). Download the Waze churn
+dataset from Kaggle and save it as `data/local/waze_dataset.csv`; the loader
+verifies its checksum. Without it, tests use a constructed fixture and skip
+the real-data notebook.
 
 ## Quick start
 
@@ -66,10 +81,13 @@ probabilities = model.predict_proba(X_test)
 | Path | What it holds |
 | --- | --- |
 | `src/dsm_project/algorithms/student/` | Student-authored algorithms (`logistic.py`, `neighbors.py`) |
+| `src/dsm_project/data/waze.py` | Waze data boundary: validation, cleaning, encoding |
 | `src/dsm_project/algorithms/registry.py` | The registry that connects student code to experiments |
 | `src/dsm_project/experiments/` | Shared split and evaluation boundary, scikit-learn reference models |
-| `src/dsm_project/evaluation/` | Comparison tables and bootstrap uncertainty |
-| `configs/project.toml` | Versioned project configuration (dataset, tasks, split seed) |
+| `src/dsm_project/evaluation/` | Bootstrap uncertainty, threshold selection, comparison tables |
+| `configs/waze.toml` | Project configuration: data path and checksum, tasks, split seed |
+| `configs/waze_fixture.toml` | Same configuration pointed at the CI fixture |
+| `configs/project.toml` | Wine verification configuration |
 | `notebooks/` | Case-study notebooks (`00-…` is the course template) |
 | `examples/` | Completed course reference notebooks (not my work) |
 | `tests/` | Test suite; notebooks are executed in CI |
@@ -77,13 +95,14 @@ probabilities = model.predict_proba(X_test)
 
 ## Roadmap
 
-1. Choose the project dataset; write the adapter, dataset card, and CI fixture.
-2. Re-run the classification case study on that data.
-3. Add more course algorithms where they fit the data (e.g., linear
-   regression study, decision tree, k-means and PCA for unsupervised structure).
-4. Promote the selected student model through the artifact and API path, with
-   monitoring.
-5. Model card, operations plan, and a tagged release.
+1. Decision tree from scratch (lecture 14): does it recover active churners?
+2. Ensembles (lecture 15): random forest and boosting, with the earlier
+   project's XGBoost as a trusted reference.
+3. Engineered ratio features, implemented and tested in the package.
+4. Engagement segmentation with k-means and PCA.
+5. Model selection across families (lecture 16), then promotion into the
+   API with input monitoring (lecture 17).
+6. Model card, operations plan, tagged release, and presentation.
 
 See [`ASSIGNMENT.md`](ASSIGNMENT.md), [`MILESTONES.md`](MILESTONES.md), and
 [`PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md) for the full course requirements.
