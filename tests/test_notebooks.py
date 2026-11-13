@@ -9,7 +9,12 @@ from nbclient import NotebookClient
 PROJECT_ROOT = Path(__file__).parents[1]
 REFERENCE_NOTEBOOKS = sorted((PROJECT_ROOT / "examples").glob("**/*.ipynb"))
 GUIDED_TEMPLATE = PROJECT_ROOT / "notebooks/00-guided-case-study-template.ipynb"
-NOTEBOOKS = [*REFERENCE_NOTEBOOKS, GUIDED_TEMPLATE]
+PROJECT_NOTEBOOKS = sorted(
+    path
+    for path in (PROJECT_ROOT / "notebooks").glob("*.ipynb")
+    if path != GUIDED_TEMPLATE
+)
+NOTEBOOKS = [*REFERENCE_NOTEBOOKS, GUIDED_TEMPLATE, *PROJECT_NOTEBOOKS]
 
 
 @pytest.mark.parametrize("notebook_path", NOTEBOOKS, ids=lambda path: path.name)
