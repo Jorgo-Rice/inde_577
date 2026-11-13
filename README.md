@@ -7,8 +7,9 @@ Learning** (Fall 2026, Dr. Randy R. Davila), built on the course
 **Author:** Jorgo Qirjaj
 
 **Waze churn risk.** Which Waze users are about to churn, and how many of
-them can a retention campaign of a given size reach? This project rebuilds
-an earlier churn analysis (RCEL 506) under this course's standards:
+them can a retention campaign of a given size reach? This project builds on
+my earlier exploratory analysis and modeling of the Waze churn data and
+develops it under this course's standards:
 algorithms implemented from scratch as a tested Python package
 (`src/dsm_project`), self-contained case-study notebooks (`notebooks/`), a
 sealed test set, baselines, and uncertainty, served through a small
@@ -51,7 +52,8 @@ churns at about 48%, but it reappears in only 17 of 30 bootstrap refits.
 
 ### Getting the data
 
-The CSV is not committed (license to be confirmed). Download the Waze churn
+The dataset is public and its use was approved by the instructor. The CSV is
+not committed to this repository: download the Waze churn
 dataset from Kaggle and save it as `data/local/waze_dataset.csv`; the loader
 verifies its checksum. Without it, tests use a constructed fixture and skip
 the real-data notebook.
@@ -105,8 +107,8 @@ probabilities = model.predict_proba(X_test)
 
 1. ~~Decision tree from scratch (lecture 14)~~ done: it does not recover
    active churners and does not beat the linear baseline.
-2. Ensembles (lecture 15): random forest and boosting, with the earlier
-   project's XGBoost as a trusted reference.
+2. Ensembles (lecture 15): random forest and boosting, with the XGBoost
+   model from my earlier analysis as a trusted reference.
 3. Engineered ratio features, implemented and tested in the package.
 4. Engagement segmentation with k-means and PCA.
 5. Model selection across families (lecture 16), then promotion into the
