@@ -5,11 +5,13 @@
 - **Dataset name:** Waze user churn dataset (synthetic).
 - **Source owner:** Created by Waze in collaboration with Google for churn
   analysis training material; distributed publicly on Kaggle.
-- **Retrieval:** Downloaded from Kaggle for an earlier course project
-  (RCEL 506) and reused here. Local copy:
-  `data/local/waze_dataset.csv`.
-- **License or access agreement:** **To be confirmed** from the Kaggle dataset
-  page. Until then the CSV is not committed; only a constructed fixture is.
+- **Retrieval:** Downloaded from Kaggle by the author, who had already
+  explored it (EDA, feature engineering, and library tree models) before this
+  project. Local copy: `data/local/waze_dataset.csv`.
+- **License or access agreement:** Public Kaggle dataset. Its use for this
+  project, including the fact that it is synthetic, was approved by the
+  course instructor. The CSV is not redistributed here; only a constructed
+  fixture is committed.
 - **Immutable version:** SHA-256
   `958330c5395239d55c4263e6603b60c8c673b28bbfd17ff4477a74c1449d228d`
   (14,999 rows, 13 columns). The adapter refuses any file with a different
