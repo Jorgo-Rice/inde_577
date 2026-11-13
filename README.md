@@ -1,4 +1,4 @@
-# INDE 577 Final Project — Data Science & Machine Learning
+# INDE 577 Final Project - Data Science & Machine Learning
 
 Final project for Rice University **INDE 577 / CMOR 438: Data Science & Machine
 Learning** (Fall 2026, Dr. Randy R. Davila), built on the course
