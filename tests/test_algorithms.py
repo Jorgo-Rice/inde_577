@@ -58,7 +58,9 @@ def test_student_registry_exposes_only_explicit_implementations() -> None:
     assert registered_student_algorithms() == (
         "batch_linear_regression",
         "decision_tree",
+        "gradient_boosting",
         "k_nearest_neighbors",
+        "random_forest",
         "softmax_regression",
     )
     estimator = create_student_algorithm(
