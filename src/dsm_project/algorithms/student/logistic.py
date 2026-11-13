@@ -12,26 +12,35 @@ intercepts :math:`b \\in \\mathbb{R}^{K}` and predicts class probabilities
     P = \\operatorname{softmax}(X W + \\mathbf{1} b^\\top),
     \\qquad P_{ik} = \\frac{e^{z_{ik}}}{\\sum_j e^{z_{ij}}}.
 
-Fitting minimizes the mean cross-entropy plus an L2 penalty on ``W`` (the
-intercepts are not penalized):
+Fitting minimizes the (optionally weighted) mean cross-entropy plus an L2
+penalty on ``W`` (the intercepts are not penalized). With sample weights
+:math:`s_i > 0` and :math:`S = \\sum_i s_i`:
 
 .. math::
 
-    J(W, b) = -\\frac{1}{n} \\sum_{i,k} Y_{ik} \\log P_{ik}
+    J(W, b) = -\\frac{1}{S} \\sum_{i,k} s_i Y_{ik} \\log P_{ik}
               + \\frac{\\lambda}{2} \\lVert W \\rVert_F^2 .
 
 Its gradients are
 
 .. math::
 
-    \\nabla_W J = \\frac{1}{n} X^\\top (P - Y) + \\lambda W,
+    \\nabla_W J = \\frac{1}{S} X^\\top \\operatorname{diag}(s) (P - Y) + \\lambda W,
     \\qquad
-    \\nabla_b J = \\frac{1}{n} \\mathbf{1}^\\top (P - Y).
+    \\nabla_b J = \\frac{1}{S} s^\\top (P - Y).
+
+Unweighted fitting is the case :math:`s_i = 1`. Class weighting sets
+:math:`s_i` from the label of row ``i`` so that a rare class (such as churned
+users) contributes as much to the objective as a common one.
 
 ``J`` is convex, so batch gradient descent with a small enough step size
 converges to a global minimizer. With ``l2_penalty > 0`` the minimizer is
 unique, which makes a differential comparison with scikit-learn's
-``LogisticRegression(C=1 / (n * l2_penalty))`` meaningful.
+``LogisticRegression(C=1 / (S * l2_penalty))`` meaningful for three or more
+classes. For two classes scikit-learn fits a single weight vector
+:math:`w = w_1 - w_0`; at the softmax optimum :math:`w_0 = -w_1`, so the ridge
+term equals :math:`(\\lambda / 4) \\lVert w \\rVert^2` and the matching setting
+is ``C = 2 / (S * l2_penalty)``. Predicted probabilities are identical.
 """
 
 from __future__ import annotations
@@ -64,8 +73,9 @@ def cross_entropy_objective(
     features: NDArray[np.float64],
     one_hot_targets: NDArray[np.float64],
     l2_penalty: float = 0.0,
+    sample_weights: NDArray[np.float64] | None = None,
 ) -> tuple[float, NDArray[np.float64], NDArray[np.float64]]:
-    """Evaluate the penalized mean cross-entropy and its exact gradients.
+    """Evaluate the penalized, weighted mean cross-entropy and its gradients.
 
     Parameters
     ----------
@@ -79,6 +89,9 @@ def cross_entropy_objective(
         One-hot label matrix with shape ``(n, K)``.
     l2_penalty
         Nonnegative ridge strength applied to ``weights`` only.
+    sample_weights
+        Optional positive weight per row, shape ``(n,)``; ``None`` means equal
+        weights.
 
     Returns
     -------
@@ -93,13 +106,16 @@ def cross_entropy_objective(
         np.exp(scores - row_max).sum(axis=1, keepdims=True)
     )
     log_probabilities = scores - log_normalizer
-    sample_count = features.shape[0]
-    data_loss = -float(np.sum(one_hot_targets * log_probabilities)) / sample_count
+    if sample_weights is None:
+        sample_weights = np.ones(features.shape[0])
+    total_weight = float(sample_weights.sum())
+    row_losses = -np.sum(one_hot_targets * log_probabilities, axis=1)
+    data_loss = float(sample_weights @ row_losses) / total_weight
     penalty = 0.5 * l2_penalty * float(np.sum(weights**2))
 
-    residual = np.exp(log_probabilities) - one_hot_targets
-    weight_gradient = features.T @ residual / sample_count + l2_penalty * weights
-    intercept_gradient = residual.mean(axis=0)
+    residual = (np.exp(log_probabilities) - one_hot_targets) * sample_weights[:, None]
+    weight_gradient = features.T @ residual / total_weight + l2_penalty * weights
+    intercept_gradient = residual.sum(axis=0) / total_weight
     return data_loss + penalty, weight_gradient, intercept_gradient
 
 
@@ -117,6 +133,11 @@ class SoftmaxRegression(ClassifierMixin, BaseEstimator):
         gradient.
     l2_penalty
         Nonnegative ridge strength :math:`\\lambda` applied to the weights.
+    class_weight
+        ``None`` (all rows weigh 1), ``"balanced"`` (row weight
+        :math:`n / (K n_k)` for a row of class ``k``, so every class carries
+        equal total weight), or a mapping from label to a positive weight;
+        labels missing from the mapping get weight 1.
 
     Attributes
     ----------
@@ -153,6 +174,7 @@ class SoftmaxRegression(ClassifierMixin, BaseEstimator):
         max_iterations: int = 5_000,
         tolerance: float = 1e-6,
         l2_penalty: float = 0.0,
+        class_weight: str | dict | None = None,
     ) -> None:
         if learning_rate <= 0:
             raise ValueError("learning_rate must be positive")
@@ -165,7 +187,13 @@ class SoftmaxRegression(ClassifierMixin, BaseEstimator):
         self.learning_rate = float(learning_rate)
         self.max_iterations = int(max_iterations)
         self.tolerance = float(tolerance)
+        if isinstance(class_weight, dict):
+            if any(not weight > 0 for weight in class_weight.values()):
+                raise ValueError("class weights must be positive")
+        elif class_weight not in (None, "balanced"):
+            raise ValueError("class_weight must be None, 'balanced', or a dict")
         self.l2_penalty = float(l2_penalty)
+        self.class_weight = class_weight
 
     def fit(self, features: ArrayLike, targets: ArrayLike) -> Self:
         """Fit weights and intercepts and record the objective trace."""
@@ -181,6 +209,7 @@ class SoftmaxRegression(ClassifierMixin, BaseEstimator):
         sample_count, feature_count = array.shape
         one_hot = np.zeros((sample_count, classes.size), dtype=float)
         one_hot[np.arange(sample_count), encoded] = 1.0
+        sample_weights = self._row_weights(classes, encoded)
 
         weights = np.zeros((feature_count, classes.size), dtype=float)
         intercepts = np.zeros(classes.size, dtype=float)
@@ -190,7 +219,8 @@ class SoftmaxRegression(ClassifierMixin, BaseEstimator):
         for iterations in range(self.max_iterations):  # noqa: B007
             with np.errstate(over="ignore", invalid="ignore"):
                 loss, weight_gradient, intercept_gradient = cross_entropy_objective(
-                    weights, intercepts, array, one_hot, self.l2_penalty
+                    weights, intercepts, array, one_hot, self.l2_penalty,
+                    sample_weights,
                 )
             if not np.isfinite(loss):
                 raise FloatingPointError(
@@ -217,6 +247,20 @@ class SoftmaxRegression(ClassifierMixin, BaseEstimator):
         self.converged_ = converged
         self.n_features_in_ = feature_count
         return self
+
+    def _row_weights(
+        self, classes: NDArray[np.generic], encoded: NDArray[np.intp]
+    ) -> NDArray[np.float64]:
+        if self.class_weight is None:
+            return np.ones(encoded.size)
+        if self.class_weight == "balanced":
+            counts = np.bincount(encoded, minlength=classes.size)
+            per_class = encoded.size / (classes.size * counts)
+        else:
+            per_class = np.array(
+                [float(self.class_weight.get(label, 1.0)) for label in classes.tolist()]
+            )
+        return per_class[encoded]
 
     def decision_function(self, features: ArrayLike) -> NDArray[np.float64]:
         """Return the linear class scores ``X W + b``."""
