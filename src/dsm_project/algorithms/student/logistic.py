@@ -262,8 +262,8 @@ class SoftmaxRegression(ClassifierMixin, BaseEstimator):
             )
         return per_class[encoded]
 
-    def decision_function(self, features: ArrayLike) -> NDArray[np.float64]:
-        """Return the linear class scores ``X W + b``."""
+    def class_scores(self, features: ArrayLike) -> NDArray[np.float64]:
+        """Return the linear score of every class, ``X W + b``, shape ``(n, K)``."""
 
         if not hasattr(self, "coef_"):
             raise RuntimeError("fit must be called before prediction")
@@ -272,15 +272,29 @@ class SoftmaxRegression(ClassifierMixin, BaseEstimator):
             raise ValueError("features have the wrong shape for this fitted model")
         return array @ self.coef_ + self.intercept_
 
+    def decision_function(self, features: ArrayLike) -> NDArray[np.float64]:
+        """Return scores in scikit-learn's convention.
+
+        For two classes this is one log-odds score per row,
+        :math:`z_1 - z_0 = \\log(p_1 / p_0)`, shape ``(n,)``; scikit-learn's
+        ranking metrics (average precision, ROC-AUC) require that shape. For
+        three or more classes it is the ``(n, K)`` matrix of class scores.
+        """
+
+        scores = self.class_scores(features)
+        if scores.shape[1] == 2:
+            return scores[:, 1] - scores[:, 0]
+        return scores
+
     def predict_proba(self, features: ArrayLike) -> NDArray[np.float64]:
         """Return class probabilities; columns follow ``classes_``."""
 
-        return softmax(self.decision_function(features))
+        return softmax(self.class_scores(features))
 
     def predict(self, features: ArrayLike) -> NDArray[np.generic]:
         """Return the most probable class label for each row."""
 
-        scores = self.decision_function(features)
+        scores = self.class_scores(features)
         return self.classes_[np.argmax(scores, axis=1)]
 
 

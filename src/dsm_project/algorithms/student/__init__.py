@@ -6,5 +6,6 @@ Add course algorithms here, then expose them through
 
 from dsm_project.algorithms.student.logistic import SoftmaxRegression
 from dsm_project.algorithms.student.neighbors import KNearestNeighborsClassifier
+from dsm_project.algorithms.student.trees import ClassificationTree
 
-__all__ = ["KNearestNeighborsClassifier", "SoftmaxRegression"]
+__all__ = ["ClassificationTree", "KNearestNeighborsClassifier", "SoftmaxRegression"]

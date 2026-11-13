@@ -57,6 +57,7 @@ def test_estimators_reject_use_before_fit() -> None:
 def test_student_registry_exposes_only_explicit_implementations() -> None:
     assert registered_student_algorithms() == (
         "batch_linear_regression",
+        "decision_tree",
         "k_nearest_neighbors",
         "softmax_regression",
     )

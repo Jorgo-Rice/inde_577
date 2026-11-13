@@ -8,6 +8,7 @@ from dsm_project.algorithms.registry import (
     registered_student_algorithms,
 )
 from dsm_project.algorithms.student import (
+    ClassificationTree,
     KNearestNeighborsClassifier,
     SoftmaxRegression,
 )
@@ -15,6 +16,7 @@ from dsm_project.algorithms.student import (
 __all__ = [
     "STUDENT_ALGORITHMS",
     "BatchLinearRegressor",
+    "ClassificationTree",
     "KNearestNeighborsClassifier",
     "MajorityClassifier",
     "MeanRegressor",

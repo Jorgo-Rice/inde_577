@@ -16,6 +16,7 @@ inherited from the template and credited to the course.
 | --- | --- | --- | --- |
 | Classification algorithms | `SoftmaxRegression`, `KNearestNeighborsClassifier`, `cross_entropy_objective`, `pairwise_distances` | `tests/test_student_algorithms.py` | `notebooks/01-wine-cultivar-softmax-vs-knn.ipynb` |
 | Evaluation boundary | `split_supervised_task`, `bootstrap_metric_interval`, `choose_threshold`, `ThresholdedClassifier` | `tests/test_evaluation_and_split.py`, `tests/test_thresholds.py` | notebooks 01, 02 |
+| Decision tree | `ClassificationTree`, `best_split`, `gini_impurity`, `entropy_impurity` | `tests/test_trees.py` | notebook 03 |
 | Waze data boundary | `WazeChurnAdapter`, `validate_waze_frame`, `prepare_waze_observations` | `tests/test_waze_data.py` | notebook 02 |
 
 ## Integration and conflict history
@@ -32,6 +33,14 @@ inherited from the template and credited to the course.
   scikit-learn's logistic regression at `C = 2/(n*lambda)`, not
   `1/(n*lambda)`, because softmax splits one weight vector across two
   classes. The derivation is recorded in `logistic.py` and notebook 02.
+
+- Differential testing of the decision tree found two legitimate
+  differences from scikit-learn (random tie-breaking between equally good
+  features, and float residue that makes scikit-learn split already-pure
+  weighted nodes) and one real defect in our softmax model:
+  `decision_function` returned two columns for binary problems, which broke
+  scikit-learn's ranking scorers. Fixed to scikit-learn's one-score
+  convention.
 
 ## Maintenance responsibility
 
