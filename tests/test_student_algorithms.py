@@ -332,3 +332,115 @@ def test_registered_classifiers_run_through_the_registry(name) -> None:
     estimator.fit(features, targets)
 
     assert estimator.score(features, targets) > 0.9
+
+
+# --------------------------------------------------------------------------
+# Class weighting and large-data behavior (added for the Waze churn task)
+# --------------------------------------------------------------------------
+
+
+def test_weighted_objective_gradient_matches_finite_differences() -> None:
+    rng = np.random.default_rng(11)
+    features = rng.normal(size=(12, 2))
+    one_hot = np.eye(2)[rng.integers(0, 2, size=12)]
+    weights, intercepts = rng.normal(size=(2, 2)), rng.normal(size=2)
+    row_weights = rng.uniform(0.5, 3.0, size=12)
+
+    _, gradient, _ = cross_entropy_objective(
+        weights, intercepts, features, one_hot, 0.2, row_weights
+    )
+    step, numeric = 1e-6, np.zeros_like(weights)
+    for index in np.ndindex(weights.shape):
+        shift = np.zeros_like(weights)
+        shift[index] = step
+        up, _, _ = cross_entropy_objective(
+            weights + shift, intercepts, features, one_hot, 0.2, row_weights
+        )
+        down, _, _ = cross_entropy_objective(
+            weights - shift, intercepts, features, one_hot, 0.2, row_weights
+        )
+        numeric[index] = (up - down) / (2 * step)
+
+    np.testing.assert_allclose(gradient, numeric, atol=1e-7)
+
+
+def test_integer_class_weight_equals_duplicating_rows() -> None:
+    # Weighting class 1 by 3 must give the same fit as listing each class-1
+    # row three times: both define the same objective.
+    rng = np.random.default_rng(5)
+    features = rng.normal(size=(30, 2))
+    targets = (features[:, 0] + rng.normal(scale=1.0, size=30) > 0.8).astype(int)
+    weighted = SoftmaxRegression(
+        learning_rate=0.5, max_iterations=20_000, tolerance=1e-10, l2_penalty=0.05,
+        class_weight={1: 3.0},
+    ).fit(features, targets)
+    repeat = np.where(targets == 1, 3, 1)
+    duplicated = SoftmaxRegression(
+        learning_rate=0.5, max_iterations=20_000, tolerance=1e-10, l2_penalty=0.05
+    ).fit(np.repeat(features, repeat, axis=0), np.repeat(targets, repeat))
+
+    np.testing.assert_allclose(
+        weighted.predict_proba(features), duplicated.predict_proba(features), atol=1e-6
+    )
+
+
+def test_balanced_softmax_agrees_with_trusted_balanced_logistic() -> None:
+    rng = np.random.default_rng(438)
+    features = rng.normal(size=(400, 4))
+    logits = features @ np.array([1.5, -1.0, 0.5, 0.0]) - 2.0
+    targets = (rng.random(400) < 1 / (1 + np.exp(-logits))).astype(int)
+    penalty = 0.01
+    student = SoftmaxRegression(
+        learning_rate=0.5, max_iterations=50_000, tolerance=1e-9,
+        l2_penalty=penalty, class_weight="balanced",
+    ).fit(features, targets)
+    # Balanced weights sum to n. For two classes softmax keeps one weight
+    # vector per class; at the optimum w0 = -w1 = -w/2, so the ridge term is
+    # (penalty / 4) * ||w||^2, half of binary logistic regression's. Hence
+    # C = 2 / (n * penalty) here, versus 1 / (n * penalty) for K >= 3.
+    trusted = LogisticRegression(
+        C=2.0 / (len(targets) * penalty), class_weight="balanced",
+        tol=1e-12, max_iter=10_000,
+    ).fit(features, targets)
+
+    assert targets.mean() < 0.35  # the case is genuinely imbalanced
+    np.testing.assert_allclose(
+        student.predict_proba(features), trusted.predict_proba(features), atol=1e-5
+    )
+
+
+def test_balanced_weights_raise_minority_probabilities() -> None:
+    rng = np.random.default_rng(1)
+    features = rng.normal(size=(200, 2))
+    targets = (features[:, 0] > 1.0).astype(int)  # about 16% positives
+    plain = SoftmaxRegression(l2_penalty=0.1).fit(features, targets)
+    balanced = SoftmaxRegression(l2_penalty=0.1, class_weight="balanced").fit(
+        features, targets
+    )
+
+    assert (
+        balanced.predict_proba(features)[:, 1].mean()
+        > plain.predict_proba(features)[:, 1].mean()
+    )
+
+
+@pytest.mark.parametrize("class_weight", ["auto", {0: 0.0}, {1: -2.0}])
+def test_softmax_rejects_invalid_class_weight(class_weight) -> None:
+    with pytest.raises(ValueError, match="class"):
+        SoftmaxRegression(class_weight=class_weight)
+
+
+def test_knn_blocked_search_matches_unblocked(monkeypatch) -> None:
+    from dsm_project.algorithms.student import neighbors
+
+    rng = np.random.default_rng(3)
+    train, queries = rng.normal(size=(50, 3)), rng.normal(size=(23, 3))
+    labels = rng.integers(0, 2, size=50)
+    model = KNearestNeighborsClassifier(n_neighbors=5).fit(train, labels)
+    expected = model.kneighbors(queries)
+
+    monkeypatch.setattr(neighbors, "_BLOCK_ELEMENTS", 150 * 4)  # 4 rows per block
+    blocked = model.kneighbors(queries)
+
+    np.testing.assert_array_equal(blocked[1], expected[1])
+    np.testing.assert_allclose(blocked[0], expected[0])

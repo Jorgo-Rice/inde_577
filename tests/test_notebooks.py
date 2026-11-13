@@ -76,9 +76,24 @@ def test_guided_template_contains_complete_applied_story() -> None:
     assert "real-world or scientific question" in markdown
 
 
+def _missing_local_data(notebook) -> list[str]:
+    """Return required uncommitted data files that are absent on this machine.
+
+    A notebook that analyzes data which may not be redistributed declares it
+    in ``metadata.dsm_project.requires_local_data``. CI (which never has those
+    files) skips its execution; a machine with the data runs it in full.
+    """
+
+    required = notebook.metadata.get("dsm_project", {}).get("requires_local_data", [])
+    return [path for path in required if not (PROJECT_ROOT / path).is_file()]
+
+
 @pytest.mark.parametrize("notebook_path", NOTEBOOKS, ids=lambda path: path.name)
 def test_notebook_executes_from_a_clean_kernel(notebook_path: Path) -> None:
     notebook = nbformat.read(notebook_path, as_version=4)
+    missing = _missing_local_data(notebook)
+    if missing:
+        pytest.skip(f"local data not present: {', '.join(missing)}")
     client = NotebookClient(
         notebook,
         timeout=180,

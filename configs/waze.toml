@@ -1,0 +1,35 @@
+# Versioned configuration for the Waze churn project.
+# The CSV itself is not committed (license to be confirmed); see
+# docs/DATASET_CARD.md for how to place it at data/local/waze_dataset.csv.
+
+[project]
+name = "Waze churn risk"
+intended_user = "A Waze product manager deciding which users to target with retention outreach"
+
+[dataset]
+adapter = "waze"
+name = "Waze user churn (synthetic)"
+source = "Waze/Google synthetic user dataset, distributed on Kaggle; local copy data/local/waze_dataset.csv"
+license = "To be confirmed from the Kaggle dataset page before redistribution"
+path = "data/local/waze_dataset.csv"
+sha256 = "958330c5395239d55c4263e6603b60c8c673b28bbfd17ff4477a74c1449d228d"
+observation_unit = "one Waze app user; usage summarized over one month plus lifetime totals"
+identifier = "ID"
+
+[tasks.classification]
+name = "flag users at risk of churning this month"
+target = "churned"
+positive_event = "churned"
+metric = "average_precision; F2 at a cross-validated threshold"
+
+[tasks.unsupervised]
+name = "discover engagement segments and their churn rates"
+metric = "silhouette_and_stability"
+
+# Regression is excluded: every candidate continuous target (e.g. driving
+# days, km driven) is a usage measurement that restates the other features.
+# See docs/PRODUCT_CONTRACT.md.
+
+[split]
+random_state = 438
+test_fraction = 0.25

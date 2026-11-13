@@ -30,6 +30,9 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 
 _METRICS = ("euclidean", "manhattan")
 _WEIGHTS = ("uniform", "distance")
+#: Upper bound on query-by-training-by-feature differences held in memory at
+#: once (about 64 MB of float64).
+_BLOCK_ELEMENTS = 8_000_000
 
 
 def pairwise_distances(
@@ -116,9 +119,18 @@ class KNearestNeighborsClassifier(ClassifierMixin, BaseEstimator):
         array = _validated_features(features)
         if array.shape[1] != self.n_features_in_:
             raise ValueError("features have the wrong shape for this fitted model")
-        distances = pairwise_distances(array, self._training_features, self.metric)
-        order = np.argsort(distances, axis=1, kind="stable")[:, : self.n_neighbors]
-        return np.take_along_axis(distances, order, axis=1), order
+        # Score queries in blocks so memory stays O(block * n * d) rather than
+        # O(m * n * d); results are identical to scoring all rows at once.
+        block = max(1, _BLOCK_ELEMENTS // max(1, self._training_features.size))
+        all_distances, all_indices = [], []
+        for start in range(0, array.shape[0], block):
+            distances = pairwise_distances(
+                array[start : start + block], self._training_features, self.metric
+            )
+            order = np.argsort(distances, axis=1, kind="stable")[:, : self.n_neighbors]
+            all_distances.append(np.take_along_axis(distances, order, axis=1))
+            all_indices.append(order)
+        return np.vstack(all_distances), np.vstack(all_indices)
 
     def predict_proba(self, features: ArrayLike) -> NDArray[np.float64]:
         """Return normalized (weighted) vote shares; columns follow ``classes_``."""
