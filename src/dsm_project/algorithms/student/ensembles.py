@@ -360,6 +360,39 @@ class GradientBoostingBinaryClassifier(ClassifierMixin, BaseEstimator):
 
         return self.classes_[(self.decision_function(features) > 0).astype(int)]
 
+    def stump_contribution(
+        self, feature: int, values: ArrayLike
+    ) -> NDArray[np.float64]:
+        """Return feature ``feature``'s additive log-odds term at ``values``.
+
+        With ``max_depth=1`` every stage is a stump on a single feature, so the
+        model is exactly additive: :math:`F(x) = F_0 + \\sum_j f_j(x_j)`. This
+        returns :math:`f_j` evaluated at each value, so the curve can be
+        plotted and compared with a linear model's straight line. Summing the
+        contributions of all features and adding ``init_score_`` reproduces
+        ``decision_function``.
+        """
+
+        if not hasattr(self, "estimators_"):
+            raise RuntimeError("fit must be called first")
+        if self.max_depth != 1:
+            raise ValueError("stump contributions are defined only for max_depth=1")
+        if not 0 <= feature < self.n_features_in_:
+            raise ValueError("feature index out of range")
+        points = np.asarray(values, dtype=float).ravel()
+        contribution = np.zeros(points.size)
+        for tree in self.estimators_:
+            nodes = tree.tree_
+            if nodes["left"][0] == -1:  # a stage that could not split adds a constant
+                continue
+            if nodes["feature"][0] != feature:
+                continue
+            leaf = np.where(
+                points <= nodes["threshold"][0], nodes["left"][0], nodes["right"][0]
+            )
+            contribution += self.learning_rate * nodes["value"][leaf, 0]
+        return contribution
+
 
 def _sigmoid(scores: NDArray[np.float64]) -> NDArray[np.float64]:
     return 0.5 * (1.0 + np.tanh(0.5 * scores))  # overflow-free logistic

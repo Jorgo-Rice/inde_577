@@ -333,3 +333,29 @@ def test_registry_builds_the_ensembles() -> None:
         create_student_algorithm("gradient_boosting", n_estimators=5),
         GradientBoostingBinaryClassifier,
     )
+
+
+def test_stump_contributions_add_up_to_the_decision_function(binary_data) -> None:
+    train_x, test_x, train_y, _ = binary_data
+    model = GradientBoostingBinaryClassifier(n_estimators=40, max_depth=1).fit(
+        train_x, train_y
+    )
+    total = model.init_score_ + sum(
+        model.stump_contribution(j, test_x[:, j]) for j in range(test_x.shape[1])
+    )
+
+    np.testing.assert_allclose(total, model.decision_function(test_x), atol=1e-12)
+
+
+def test_stump_contribution_requires_stumps_and_valid_feature(binary_data) -> None:
+    train_x, _, train_y, _ = binary_data
+    deep = GradientBoostingBinaryClassifier(n_estimators=3, max_depth=2).fit(
+        train_x, train_y
+    )
+    with pytest.raises(ValueError, match="max_depth=1"):
+        deep.stump_contribution(0, [0.0])
+    stumps = GradientBoostingBinaryClassifier(n_estimators=3, max_depth=1).fit(
+        train_x, train_y
+    )
+    with pytest.raises(ValueError, match="out of range"):
+        stumps.stump_contribution(99, [0.0])
