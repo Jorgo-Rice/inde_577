@@ -40,7 +40,7 @@ Details are in [`DATASET_CARD.md`](DATASET_CARD.md).
 | Logistic regression | Churn risk | Yes | Churn falls monotonically with activity and tenure; a linear log-odds model is a transparent baseline with readable coefficients | `SoftmaxRegression`, notebook 02 |
 | Nearest neighbors | Churn risk | Yes | Tests whether *similar usage* implies similar risk without a linearity assumption | `KNearestNeighborsClassifier`, notebook 02 |
 | Decision trees | Churn risk | Yes | Can capture thresholds and interactions such as tenure × activity; the data turned out to be close to additive, so the tree is kept for readable rules, not promoted | `ClassificationTree`, notebook 03 |
-| Ensembles | Churn risk | Yes (next) | Bagging and boosting reduce single-tree variance; the XGBoost model from my earlier analysis becomes a trusted reference | Planned (lecture 15) |
+| Ensembles | Churn risk | Yes | Bagging and boosting reduce single-tree variance. Random forest reaches AP ≈ 0.38; boosted stumps tie softmax at ≈ 0.39; deeper boosting is worse, so the signal is additive. Boosted stumps go forward to final model selection; scikit-learn's implementations serve as trusted references | `RandomForest`, `GradientBoostingBinaryClassifier`, notebook 04 |
 | Support vector machines and kernels | Churn risk | Optional | Applicable, but kernel SVMs scale poorly to 10k+ rows and give no calibrated probabilities without extra fitting | Decide after trees |
 | Neural networks | Churn risk | Optional | Applicable; only worth adding if trees show non-linear signal that linear models miss | Decide after trees |
 | Clustering | Engagement segments | Yes (planned) | k-means on standardized usage to find segments; churn labels used only to audit segments | Planned |

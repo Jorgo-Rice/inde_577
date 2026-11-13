@@ -8,7 +8,9 @@ from typing import Any
 from dsm_project.algorithms.linear import BatchLinearRegressor
 from dsm_project.algorithms.student import (
     ClassificationTree,
+    GradientBoostingBinaryClassifier,
     KNearestNeighborsClassifier,
+    RandomForest,
     SoftmaxRegression,
 )
 
@@ -20,7 +22,9 @@ EstimatorFactory = Callable[..., Any]
 STUDENT_ALGORITHMS: dict[str, EstimatorFactory] = {
     "batch_linear_regression": BatchLinearRegressor,
     "decision_tree": ClassificationTree,
+    "gradient_boosting": GradientBoostingBinaryClassifier,
     "k_nearest_neighbors": KNearestNeighborsClassifier,
+    "random_forest": RandomForest,
     "softmax_regression": SoftmaxRegression,
 }
 

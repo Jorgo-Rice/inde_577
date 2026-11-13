@@ -16,6 +16,7 @@ inherited from the template and credited to the course.
 | --- | --- | --- | --- |
 | Classification algorithms | `SoftmaxRegression`, `KNearestNeighborsClassifier`, `cross_entropy_objective`, `pairwise_distances` | `tests/test_student_algorithms.py` | `notebooks/01-wine-cultivar-softmax-vs-knn.ipynb` |
 | Evaluation boundary | `split_supervised_task`, `bootstrap_metric_interval`, `choose_threshold`, `ThresholdedClassifier` | `tests/test_evaluation_and_split.py`, `tests/test_thresholds.py` | notebooks 01, 02 |
+| Ensembles | `RandomForest`, `GradientBoostingBinaryClassifier`, `RegressionTree`, `best_regression_split` | `tests/test_ensembles.py` | notebook 04 |
 | Decision tree | `ClassificationTree`, `best_split`, `gini_impurity`, `entropy_impurity` | `tests/test_trees.py` | notebook 03 |
 | Waze data boundary | `WazeChurnAdapter`, `validate_waze_frame`, `prepare_waze_observations` | `tests/test_waze_data.py` | notebook 02 |
 

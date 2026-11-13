@@ -15,17 +15,17 @@ algorithms implemented from scratch as a tested Python package
 sealed test set, baselines, and uncertainty, served through a small
 reproducible system (versioned artifact, API, logs, CI).
 
-## Status — milestones 1, 2, 2A done; milestone 3 under way
+## Status — milestones 1, 2, 2A and 3 done
 
 | Area | State |
 | --- | --- |
 | Product and data contract | [`docs/PRODUCT_CONTRACT.md`](docs/PRODUCT_CONTRACT.md), [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md), [ADR 0002](docs/decisions/0002-waze-churn-dataset.md) |
 | Data boundary | `WazeChurnAdapter`: checksum-pinned CSV, schema and range validation, 700 unlabeled users dropped; constructed CI fixture |
-| Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting), `KNearestNeighborsClassifier` (blocked search for large data), and `ClassificationTree` (CART with Gini/entropy, stopping rules, class weights, feature sampling, rule export) |
+| Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting), `KNearestNeighborsClassifier` (blocked search for large data), `ClassificationTree` and `RegressionTree` (CART with rule export), `RandomForest` (bagging, feature sampling, out-of-bag estimates), and `GradientBoostingBinaryClassifier` (log-loss boosting with Newton leaf steps) |
 | Evaluation | Shared holdout split, bootstrap intervals, F-beta threshold selection, `ThresholdedClassifier` |
 | Tests | Analytic cases, gradient checks, failure modes, differential tests against scikit-learn, data-boundary tests |
-| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
-| Next | Ensembles (random forest, boosting), engagement segmentation (k-means, PCA), cross-family model selection, promotion into the API |
+| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [04 — ensembles](notebooks/04-waze-churn-ensembles.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
+| Next | Engineered features, engagement segmentation (k-means, PCA), cross-family model selection, promotion into the API |
 
 ### Headline result (sealed test set, 3,575 users)
 
@@ -49,6 +49,15 @@ about 0.35 and loses to softmax regression on all 15 paired folds (by about
 tree's thresholds add variance without adding signal. Its depth-3 rules are
 still a readable summary for a PM; the "inactive, newer, heavy driver" segment
 churns at about 48%, but it reappears in only 17 of 30 bootstrap refits.
+
+**Ensembles (development data only).** The best student random forest
+(100-user leaves) reaches AP about 0.38 and the best gradient boosting (depth-1
+stumps, 200 stages) about 0.39: both fix the single tree's variance, but
+neither beats softmax regression. Boosted stumps tie it (higher on 10 of 15
+paired folds, by 0.001 on average). Deeper boosting does worse, so the churn
+signal is additive. The stumps' learned curves show modest bends (risk falls
+fastest over the first ~10 active days; users with 200+ drives a month churn
+at 26% vs 17%), useful leads for engineered features.
 
 ### Getting the data
 
@@ -107,9 +116,11 @@ probabilities = model.predict_proba(X_test)
 
 1. ~~Decision tree from scratch (lecture 14)~~ done: it does not recover
    active churners and does not beat the linear baseline.
-2. Ensembles (lecture 15): random forest and boosting, with the XGBoost
-   model from my earlier analysis as a trusted reference.
-3. Engineered ratio features, implemented and tested in the package.
+2. ~~Ensembles (lecture 15)~~ done: random forest and gradient boosting
+   (verified against scikit-learn) close the single tree's gap; boosted
+   stumps tie the linear baseline.
+3. Engineered features suggested by the boosted curves and my earlier
+   analysis (heavy-driver flag, curved activity term, ratio features).
 4. Engagement segmentation with k-means and PCA.
 5. Model selection across families (lecture 16), then promotion into the
    API with input monitoring (lecture 17).
