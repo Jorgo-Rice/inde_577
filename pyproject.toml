@@ -5,11 +5,11 @@ build-backend = "uv_build"
 [project]
 name = "dsm-final-project"
 version = "0.1.0"
-description = "Professional final-project template for data science and machine learning"
+description = "INDE 577 final project: from-scratch ML algorithms, tests, and case-study notebooks"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
-authors = [{ name = "CMOR 438 / INDE 577 project team" }]
+authors = [{ name = "Jorgo Qirjaj" }]
 dependencies = [
     "fastapi>=0.115",
     "joblib>=1.4",

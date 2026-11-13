@@ -18,15 +18,18 @@ and known representativeness limits.
 
 | Course family | Project task | Applicable? | Mathematical justification | Evidence |
 | --- | --- | --- | --- | --- |
-| Linear regression | | | | |
-| Logistic regression | | | | |
-| Nearest neighbors | | | | |
-| Support vector machines and kernels | | | | |
-| Decision trees | | | | |
-| Ensembles | | | | |
-| Neural networks | | | | |
-| Clustering | | | | |
-| Dimensionality reduction | | | | |
+| Linear regression | (stand-in) alcohol from other chemistry | Pending dataset | Template exemplar `BatchLinearRegressor` exists | — |
+| Logistic regression | Cultivar classification | Yes | Tests whether classes are linearly separable; gives class probabilities | `SoftmaxRegression`, notebook 01 |
+| Nearest neighbors | Cultivar classification | Yes | Tests whether local chemical similarity implies the same class | `KNearestNeighborsClassifier`, notebook 01 |
+| Support vector machines and kernels | | Pending dataset | | |
+| Decision trees | | Pending dataset | | |
+| Ensembles | | Pending dataset | | |
+| Neural networks | | Pending dataset | | |
+| Clustering | | Pending dataset | | |
+| Dimensionality reduction | | Pending dataset | | |
+
+Current rows describe the stand-in wine slice (see ADR 0001) and will be
+revised for the project dataset.
 
 Mark exclusions explicitly. Forcing an algorithm onto an incompatible target
 does not demonstrate breadth.

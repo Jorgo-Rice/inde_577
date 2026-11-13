@@ -2,24 +2,31 @@
 
 ## Participants
 
-List GitHub handles only. Do not include student IDs, grades, accommodations,
-or private feedback.
+Solo project: Jorgo Qirjaj (GitHub handle to be recorded).
 
 ## Shared core
 
-Describe decisions, reviews, and integration work owned jointly by the team.
+Not applicable while the project is solo. Course-template infrastructure
+(configuration, data adapters, experiment runners, artifact, API, CI) is
+inherited from the template and credited to the course.
 
 ## Individual vertical slices
 
-For each participant, record the user or scientific need, owned interfaces,
-tests, documentation, operations, related issues and pull requests, and
-dependencies on teammates.
+| Slice | Owned interfaces | Tests | Notebook |
+| --- | --- | --- | --- |
+| Classification algorithms | `SoftmaxRegression`, `KNearestNeighborsClassifier`, `cross_entropy_objective`, `pairwise_distances` | `tests/test_student_algorithms.py` | `notebooks/01-wine-cultivar-softmax-vs-knn.ipynb` |
+| Evaluation boundary | `split_supervised_task`, `bootstrap_metric_interval` | `tests/test_evaluation_and_split.py` | same |
 
 ## Integration and conflict history
 
-Summarize at least one consequential integration decision. Explain competing
-intentions, evidence used, and the resulting contract.
+- The template baselines (`MeanRegressor`, `MajorityClassifier`) could not be
+  cloned by scikit-learn cross-validation. They now inherit the standard
+  scikit-learn estimator bases so baselines go through the same selection
+  procedure as every candidate.
+- The holdout split was moved out of `evaluate_supervised_estimator` into
+  `split_supervised_task` so that cross-validation and final evaluation provably
+  use the same development/test boundary.
 
 ## Maintenance responsibility
 
-State who investigates defects in each component through final review.
+Jorgo Qirjaj maintains all components through final review.
