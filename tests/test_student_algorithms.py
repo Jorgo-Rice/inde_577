@@ -281,7 +281,9 @@ def test_knn_agrees_with_trusted_classifier(n_neighbors, metric, weights) -> Non
     trusted = make_pipeline(
         StandardScaler(),
         KNeighborsClassifier(
-            n_neighbors=n_neighbors, metric=metric, weights=weights,
+            n_neighbors=n_neighbors,
+            metric=metric,
+            weights=weights,
             algorithm="brute",
         ),
     ).fit(train_x, train_y)
@@ -371,7 +373,10 @@ def test_integer_class_weight_equals_duplicating_rows() -> None:
     features = rng.normal(size=(30, 2))
     targets = (features[:, 0] + rng.normal(scale=1.0, size=30) > 0.8).astype(int)
     weighted = SoftmaxRegression(
-        learning_rate=0.5, max_iterations=20_000, tolerance=1e-10, l2_penalty=0.05,
+        learning_rate=0.5,
+        max_iterations=20_000,
+        tolerance=1e-10,
+        l2_penalty=0.05,
         class_weight={1: 3.0},
     ).fit(features, targets)
     repeat = np.where(targets == 1, 3, 1)
@@ -391,16 +396,21 @@ def test_balanced_softmax_agrees_with_trusted_balanced_logistic() -> None:
     targets = (rng.random(400) < 1 / (1 + np.exp(-logits))).astype(int)
     penalty = 0.01
     student = SoftmaxRegression(
-        learning_rate=0.5, max_iterations=50_000, tolerance=1e-9,
-        l2_penalty=penalty, class_weight="balanced",
+        learning_rate=0.5,
+        max_iterations=50_000,
+        tolerance=1e-9,
+        l2_penalty=penalty,
+        class_weight="balanced",
     ).fit(features, targets)
     # Balanced weights sum to n. For two classes softmax keeps one weight
     # vector per class; at the optimum w0 = -w1 = -w/2, so the ridge term is
     # (penalty / 4) * ||w||^2, half of binary logistic regression's. Hence
     # C = 2 / (n * penalty) here, versus 1 / (n * penalty) for K >= 3.
     trusted = LogisticRegression(
-        C=2.0 / (len(targets) * penalty), class_weight="balanced",
-        tol=1e-12, max_iter=10_000,
+        C=2.0 / (len(targets) * penalty),
+        class_weight="balanced",
+        tol=1e-12,
+        max_iter=10_000,
     ).fit(features, targets)
 
     assert targets.mean() < 0.35  # the case is genuinely imbalanced
@@ -444,3 +454,30 @@ def test_knn_blocked_search_matches_unblocked(monkeypatch) -> None:
 
     np.testing.assert_array_equal(blocked[1], expected[1])
     np.testing.assert_allclose(blocked[0], expected[0])
+
+
+def test_binary_decision_function_follows_sklearn_convention() -> None:
+    # scikit-learn's ranking scorers call decision_function and require one
+    # score per row for binary problems; a (n, 2) matrix crashes them.
+    from sklearn.model_selection import cross_val_score
+
+    rng = np.random.default_rng(9)
+    features = rng.normal(size=(120, 3))
+    targets = (features[:, 0] + rng.normal(size=120) > 0.5).astype(int)
+    model = SoftmaxRegression(l2_penalty=0.1).fit(features, targets)
+    scores = model.decision_function(features)
+    probabilities = model.predict_proba(features)
+
+    assert scores.shape == (120,)
+    np.testing.assert_allclose(
+        scores, np.log(probabilities[:, 1] / probabilities[:, 0])
+    )
+    for scoring in ("average_precision", "roc_auc"):
+        values = cross_val_score(
+            SoftmaxRegression(), features, targets, scoring=scoring
+        )
+        assert np.isfinite(values).all()
+
+    wine_x, wine_y = load_wine(return_X_y=True)
+    multiclass = SoftmaxRegression(max_iterations=50).fit(wine_x, wine_y)
+    assert multiclass.decision_function(wine_x).shape == (len(wine_y), 3)
