@@ -1,0 +1,52 @@
+[build-system]
+requires = ["uv_build>=0.10.9,<0.11"]
+build-backend = "uv_build"
+
+[project]
+name = "dsm-final-project"
+version = "0.1.0"
+description = "Professional final-project template for data science and machine learning"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "CMOR 438 / INDE 577 project team" }]
+dependencies = [
+    "fastapi>=0.115",
+    "joblib>=1.4",
+    "matplotlib>=3.9",
+    "numpy>=2.1",
+    "pandas>=2.2",
+    "pydantic>=2.9",
+    "scikit-learn>=1.5",
+    "uvicorn>=0.32",
+]
+
+[project.scripts]
+dsm-project = "dsm_project.cli:main"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.27",
+    "ipykernel>=6.29",
+    "nbclient>=0.10",
+    "nbformat>=5.10",
+    "pytest>=8.3",
+    "ruff>=0.9",
+]
+
+[tool.uv]
+link-mode = "copy"
+
+[tool.uv.build-backend]
+module-name = "dsm_project"
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

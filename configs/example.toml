@@ -1,0 +1,29 @@
+[project]
+name = "Wine chemistry template demonstration"
+intended_user = "A student verifying the untouched template"
+
+[dataset]
+adapter = "example_wine"
+name = "Wine recognition"
+source = "UCI Machine Learning Repository via scikit-learn"
+license = "See data/README.md and the upstream dataset documentation"
+observation_unit = "one chemically analyzed wine sample"
+identifier = "observation_id"
+
+[tasks.regression]
+name = "estimate alcohol concentration"
+target = "alcohol"
+metric = "root_mean_squared_error"
+
+[tasks.classification]
+name = "classify cultivar"
+target = "cultivar"
+metric = "balanced_accuracy"
+
+[tasks.unsupervised]
+name = "investigate recurring chemistry profiles"
+metric = "silhouette_and_stability"
+
+[split]
+random_state = 438
+test_fraction = 0.25

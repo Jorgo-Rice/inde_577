@@ -1,0 +1,51 @@
+name: Container system test
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "configs/**"
+      - "Dockerfile"
+      - "compose.yaml"
+      - "uv.lock"
+      - "pyproject.toml"
+      - ".github/workflows/system-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  container-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build service image
+        run: docker build --tag dsm-project:test .
+
+      - name: Start service
+        run: docker run --detach --name dsm-project --publish 8000:8000 dsm-project:test
+
+      - name: Wait for health contract
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs dsm-project
+          exit 1
+
+      - name: Preserve service logs
+        if: always()
+        run: docker logs dsm-project || true
+
+      - name: Stop service
+        if: always()
+        run: docker rm --force dsm-project || true

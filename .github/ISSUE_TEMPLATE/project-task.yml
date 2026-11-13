@@ -1,0 +1,33 @@
+name: Project task
+description: Propose one bounded scientific or engineering contribution.
+title: "[Task]: "
+labels: ["project-task"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: User or scientific need
+      description: Who needs this, and what becomes possible?
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Mathematical and software contract
+      description: Define inputs, outputs, assumptions, state, and failures.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Verification plan
+      description: Name tests, comparisons, datasets, and review evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Data, privacy, and operational impact
+      description: Identify provenance, access, security, and deployment consequences.
+    validations:
+      required: true
