@@ -23,9 +23,10 @@ reproducible system (versioned artifact, API, logs, CI).
 | Data boundary | `WazeChurnAdapter`: checksum-pinned CSV, schema and range validation, 700 unlabeled users dropped; constructed CI fixture |
 | Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting), `KNearestNeighborsClassifier` (blocked search for large data), `ClassificationTree` and `RegressionTree` (CART with rule export), `RandomForest` (bagging, feature sampling, out-of-bag estimates), and `GradientBoostingBinaryClassifier` (log-loss boosting with Newton leaf steps) |
 | Evaluation | Shared holdout split, bootstrap intervals, F-beta threshold selection, `ThresholdedClassifier` |
+| Features and charts | `WazeFeatureBuilder` (13 engineered behavior features from my earlier analysis) and shared seaborn helpers in `dsm_project.visualization` (one theme, churn rates with 95% intervals) |
 | Tests | Analytic cases, gradient checks, failure modes, differential tests against scikit-learn, data-boundary tests |
-| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [04 — ensembles](notebooks/04-waze-churn-ensembles.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
-| Next | Engineered features, engagement segmentation (k-means, PCA), cross-family model selection, promotion into the API |
+| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [04 — ensembles](notebooks/04-waze-churn-ensembles.ipynb); [05 — engineered features](notebooks/05-waze-engineered-features.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
+| Next | Engagement segmentation (k-means, PCA), linear SVM and neural network, cross-family model selection, promotion into the API and a refreshed Streamlit app |
 
 ### Headline result (sealed test set, 3,575 users)
 
@@ -58,6 +59,15 @@ paired folds, by 0.001 on average). Deeper boosting does worse, so the churn
 signal is additive. The stumps' learned curves show modest bends (risk falls
 fastest over the first ~10 active days; users with 200+ drives a month churn
 at 26% vs 17%), useful leads for engineered features.
+
+**Engineered features (development data only).** Building on my earlier
+analysis, I turned usage into behavior segments. **Consistency, not intensity,
+separates loyal users from churners:** professional drivers churn at about 7%
+and high-frequency drivers at about 5%, while low-frequency drivers churn at
+about 35% and make up close to half of all churners. Adding the features to
+the models does not improve ranking (softmax loses about 0.007 AP), because
+they re-express the raw activity and drive counts. So the models keep the raw
+features, and the segments become the PM-facing explanation layer.
 
 ### Getting the data
 
@@ -119,12 +129,15 @@ probabilities = model.predict_proba(X_test)
 2. ~~Ensembles (lecture 15)~~ done: random forest and gradient boosting
    (verified against scikit-learn) close the single tree's gap; boosted
    stumps tie the linear baseline.
-3. Engineered features suggested by the boosted curves and my earlier
-   analysis (heavy-driver flag, curved activity term, ratio features).
+3. ~~Engineered features~~ done: clear PM segments (churn from about 5% to
+   35%) but no ranking gain, so models keep the raw features.
 4. Engagement segmentation with k-means and PCA.
-5. Model selection across families (lecture 16), then promotion into the
-   API with input monitoring (lecture 17).
-6. Model card, operations plan, tagged release, and presentation.
+5. Linear SVM (lecture 11) and a small neural network (lecture 12).
+6. Model selection across families (lecture 16), with calibration and
+   confusion-matrix checks, then promotion into the API with input
+   monitoring (lecture 17).
+7. A refreshed version of my Streamlit churn app on top of the promoted model.
+8. Model card, operations plan, tagged release, and presentation.
 
 See [`ASSIGNMENT.md`](ASSIGNMENT.md), [`MILESTONES.md`](MILESTONES.md), and
 [`PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md) for the full course requirements.
