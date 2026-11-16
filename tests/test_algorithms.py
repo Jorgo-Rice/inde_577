@@ -61,13 +61,13 @@ def test_student_registry_exposes_only_explicit_implementations() -> None:
         "gradient_boosting",
         "k_means",
         "k_nearest_neighbors",
+        "linear_svm",
+        "neural_network",
         "pca",
         "random_forest",
         "softmax_regression",
     )
-    estimator = create_student_algorithm(
-        "batch_linear_regression", learning_rate=0.05
-    )
+    estimator = create_student_algorithm("batch_linear_regression", learning_rate=0.05)
     assert isinstance(estimator, BatchLinearRegressor)
 
     with pytest.raises(ValueError, match="Unknown student algorithm"):
@@ -96,3 +96,20 @@ def test_baselines_are_cloneable_for_cross_validation() -> None:
     )
 
     np.testing.assert_allclose(scores, 0.5)
+
+
+def test_every_registered_classifier_reports_use_before_fit_clearly() -> None:
+    import pytest as _pytest
+
+    from dsm_project.algorithms import STUDENT_ALGORITHMS
+
+    classifiers = [
+        name
+        for name, factory in STUDENT_ALGORITHMS.items()
+        if hasattr(factory, "predict")
+        and name not in {"batch_linear_regression", "k_means"}
+    ]
+    assert len(classifiers) >= 7
+    for name in classifiers:
+        with _pytest.raises(RuntimeError, match="fit must be called"):
+            create_student_algorithm(name).predict([[0.0, 1.0]])
