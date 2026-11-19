@@ -15,7 +15,7 @@ algorithms implemented from scratch as a tested Python package
 sealed test set, baselines, and uncertainty, served through a small
 reproducible system (versioned artifact, API, logs, CI).
 
-## Status - milestones 1, 2, 2A, 3 and 4 done (every course model family covered)
+## Status - milestones 1 to 5 done (every course model family covered, model promoted)
 
 | Area | State |
 | --- | --- |
@@ -25,23 +25,33 @@ reproducible system (versioned artifact, API, logs, CI).
 | Evaluation | Shared holdout split, bootstrap intervals, F-beta threshold selection, `ThresholdedClassifier` |
 | Features and charts | `WazeFeatureBuilder` (13 engineered behavior features from my earlier analysis) and shared seaborn helpers in `dsm_project.visualization` (one theme, churn rates with 95% intervals) |
 | Tests | Analytic cases, gradient checks, failure modes, differential tests against scikit-learn, data-boundary tests |
-| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [04 — ensembles](notebooks/04-waze-churn-ensembles.ipynb); [05 — engineered features](notebooks/05-waze-engineered-features.ipynb); [06 — user segments](notebooks/06-waze-user-segments.ipynb); [07 — SVM and neural network](notebooks/07-waze-churn-svm-neural-network.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
-| Next | Cross-family model selection on the sealed test set, promotion into the API, and a refreshed Streamlit app |
+| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [04 — ensembles](notebooks/04-waze-churn-ensembles.ipynb); [05 — engineered features](notebooks/05-waze-engineered-features.ipynb); [06 — user segments](notebooks/06-waze-user-segments.ipynb); [07 — SVM and neural network](notebooks/07-waze-churn-svm-neural-network.ipynb); [08 — model selection](notebooks/08-waze-churn-model-selection.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
+| Next | Serve the promoted model through the API with SQLite prediction logs, and a refreshed Streamlit app |
 
-### Headline result (sealed test set, 3,575 users)
+### Headline result: the promoted model (sealed test set, 3,575 users)
 
-| Model | Average precision | Recall at frozen threshold | Precision | Users flagged |
-| --- | --- | --- | --- | --- |
-| Baseline (always "retained") | 0.177 | 0.00 | — | 0% |
-| **Student softmax regression** | **0.386** | **0.855** (95% CI 0.83–0.88) | 0.27 | 56% |
-| Student k-NN (k = 301) | 0.366 | 0.828 | 0.27 | 54% |
+Model selection (notebook 08) froze the choice on development data, then
+opened the test set once.
 
-The student softmax model ranks users about twice as well as random. At a 20%
-outreach budget it reaches about 45% of churners at about 40% precision.
-It relies mostly on active days, driving days, and tenure, so it misses
-nearly all churners who were still active on more than 20 days that month.
-Activity and churn are measured in the same month, so these results show
-disengagement in progress, not early warning.
+| Model | Average precision (95% CI) | Recall at 0.25 | Precision at 0.25 | Users contacted | Value per 1,000 users* |
+| --- | --- | --- | --- | --- | --- |
+| Baseline (always "retained") | 0.177 | 0.00 | — | 0% | $0 |
+| **Student softmax regression (promoted, v1.0.0)** | **0.386 (0.35–0.43)** | **0.55** | **0.37** | **26%** | **$65 ($48–81)** |
+| Boosted stumps (finalist) | 0.380 | 0.57 | 0.38 | 27% | $68 |
+| Neural network (finalist) | 0.388 | 0.59 | 0.37 | 28% | $67 |
+
+\*Illustrative PM assumptions: $0.50 per contact, $10 per saved user, 20% save
+rate, giving a break-even churn probability of 0.25. The real save rate, from
+an A/B test of the retention message, matters more than the model choice.
+
+The three finalists tie, so the simplest and most interpretable one was
+promoted. Its probabilities are calibrated, so the cost-based threshold is
+meaningful, and its test score matches its development score (no selection
+optimism). The score rests on active days, driving days, and tenure. It
+reaches 90% of churners among occasional users but few among steady users,
+whose churners are still active that month. Activity and churn are measured in
+the same month, so these results show disengagement in progress, not early
+warning.
 
 **Decision tree (development data only, test set kept sealed).** The best
 student tree (depth 4, at least 100 users per leaf) reaches cross-validated AP
@@ -103,6 +113,7 @@ uv sync --locked
 uv run python scripts/setup_project.py   # installs the "DSM Project" kernel
 uv run pytest -q                         # unit, differential, and notebook tests
 uv run ruff check src tests scripts
+uv run python scripts/train_churn_model.py   # rebuild the promoted model bundle (needs the CSV)
 ```
 
 Open the notebook in VS Code or Jupyter and select the **DSM Project** kernel.
@@ -134,6 +145,8 @@ probabilities = model.predict_proba(X_test)
 | `src/dsm_project/algorithms/registry.py` | The registry that connects student code to experiments |
 | `src/dsm_project/experiments/` | Shared split and evaluation boundary, scikit-learn reference models |
 | `src/dsm_project/evaluation/` | Bootstrap uncertainty, threshold selection, comparison tables |
+| `src/dsm_project/churn_model.py` | The promoted model, its decision threshold, and training |
+| `scripts/train_churn_model.py` | Rebuilds the versioned model bundle in `artifacts/` |
 | `configs/waze.toml` | Project configuration: data path and checksum, tasks, split seed |
 | `configs/waze_fixture.toml` | Same configuration pointed at the CI fixture |
 | `configs/project.toml` | Wine verification configuration |
@@ -157,9 +170,9 @@ probabilities = model.predict_proba(X_test)
 5. ~~Linear SVM and neural network (lectures 11-12)~~ done: both tie the
    linear baseline once set up for imbalance; every family meets the same
    ceiling.
-6. Model selection across families (lecture 16), with calibration and
-   confusion-matrix checks, then promotion into the API with input
-   monitoring (lecture 17).
+6. ~~Model selection (lecture 16)~~ done: softmax regression promoted as
+   `student-softmax-churn` 1.0.0 with a cost-based threshold; next, serve it
+   through the API with input monitoring (lecture 17).
 7. A refreshed version of my Streamlit churn app on top of the promoted model.
 8. Model card, operations plan, tagged release, and presentation.
 

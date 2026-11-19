@@ -16,6 +16,7 @@ inherited from the template and credited to the course.
 | --- | --- | --- | --- |
 | Classification algorithms | `SoftmaxRegression`, `KNearestNeighborsClassifier`, `cross_entropy_objective`, `pairwise_distances` | `tests/test_student_algorithms.py` | `notebooks/01-wine-cultivar-softmax-vs-knn.ipynb` |
 | Evaluation boundary | `split_supervised_task`, `bootstrap_metric_interval`, `choose_threshold`, `ThresholdedClassifier` | `tests/test_evaluation_and_split.py`, `tests/test_thresholds.py` | notebooks 01, 02 |
+| Model selection and promotion | `churn_model.py`, `OutreachEconomics`, `calibration_table`, `brier_score`, `scripts/train_churn_model.py` | `tests/test_decisions.py`, `tests/test_churn_model.py` | notebook 08 |
 | SVM and neural network | `LinearSVM`, `hinge_objective`, `NeuralNetworkClassifier`, `loss_and_gradients` | `tests/test_svm_neural_network.py` | notebook 07 |
 | Unsupervised segmentation | `KMeans`, `PCA`, `UserSegmenter` | `tests/test_unsupervised.py`, `tests/test_segments.py` | notebook 06 |
 | Engineered features and charts | `WazeFeatureBuilder`, `engineer_features`, seaborn helpers in `visualization.py` | `tests/test_features.py`, `tests/test_visualization.py` | notebook 05 (and charts in 02–04) |
