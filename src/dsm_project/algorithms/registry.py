@@ -12,6 +12,8 @@ from dsm_project.algorithms.student import (
     GradientBoostingBinaryClassifier,
     KMeans,
     KNearestNeighborsClassifier,
+    LinearSVM,
+    NeuralNetworkClassifier,
     RandomForest,
     SoftmaxRegression,
 )
@@ -27,6 +29,8 @@ STUDENT_ALGORITHMS: dict[str, EstimatorFactory] = {
     "gradient_boosting": GradientBoostingBinaryClassifier,
     "k_means": KMeans,
     "k_nearest_neighbors": KNearestNeighborsClassifier,
+    "linear_svm": LinearSVM,
+    "neural_network": NeuralNetworkClassifier,
     "pca": PCA,
     "random_forest": RandomForest,
     "softmax_regression": SoftmaxRegression,

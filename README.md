@@ -15,18 +15,18 @@ algorithms implemented from scratch as a tested Python package
 sealed test set, baselines, and uncertainty, served through a small
 reproducible system (versioned artifact, API, logs, CI).
 
-## Status - milestones 1, 2, 2A, 3 and 4 done
+## Status - milestones 1, 2, 2A, 3 and 4 done (every course model family covered)
 
 | Area | State |
 | --- | --- |
 | Product and data contract | [`docs/PRODUCT_CONTRACT.md`](docs/PRODUCT_CONTRACT.md), [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md), [ADR 0002](docs/decisions/0002-waze-churn-dataset.md) |
 | Data boundary | `WazeChurnAdapter`: checksum-pinned CSV, schema and range validation, 700 unlabeled users dropped; constructed CI fixture |
-| Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting), `KNearestNeighborsClassifier` (blocked search for large data), `ClassificationTree` and `RegressionTree` (CART with rule export), `RandomForest` (bagging, feature sampling, out-of-bag estimates), `GradientBoostingBinaryClassifier` (log-loss boosting with Newton leaf steps), and `KMeans` / `PCA` (unsupervised) |
+| Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting), `KNearestNeighborsClassifier` (blocked search for large data), `ClassificationTree` and `RegressionTree` (CART with rule export), `RandomForest` (bagging, feature sampling, out-of-bag estimates), `GradientBoostingBinaryClassifier` (log-loss boosting with Newton leaf steps), `LinearSVM` (hinge loss, subgradient descent), `NeuralNetworkClassifier` (backpropagation, Adam), and `KMeans` / `PCA` (unsupervised) |
 | Evaluation | Shared holdout split, bootstrap intervals, F-beta threshold selection, `ThresholdedClassifier` |
 | Features and charts | `WazeFeatureBuilder` (13 engineered behavior features from my earlier analysis) and shared seaborn helpers in `dsm_project.visualization` (one theme, churn rates with 95% intervals) |
 | Tests | Analytic cases, gradient checks, failure modes, differential tests against scikit-learn, data-boundary tests |
-| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [04 — ensembles](notebooks/04-waze-churn-ensembles.ipynb); [05 — engineered features](notebooks/05-waze-engineered-features.ipynb); [06 — user segments](notebooks/06-waze-user-segments.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
-| Next | Linear SVM and neural network, cross-family model selection, promotion into the API and a refreshed Streamlit app |
+| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [04 — ensembles](notebooks/04-waze-churn-ensembles.ipynb); [05 — engineered features](notebooks/05-waze-engineered-features.ipynb); [06 — user segments](notebooks/06-waze-user-segments.ipynb); [07 — SVM and neural network](notebooks/07-waze-churn-svm-neural-network.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
+| Next | Cross-family model selection on the sealed test set, promotion into the API, and a refreshed Streamlit app |
 
 ### Headline result (sealed test set, 3,575 users)
 
@@ -77,6 +77,14 @@ about 37% versus about 13% for both steady segments**, even though heavy users
 log six times the sessions of light users: frequency, not volume, drives
 retention. Clusters are weakly separated (silhouette about 0.17), so the
 segments divide a continuum rather than discover distinct populations.
+
+**Linear SVM and neural network (development data only).** With balanced class
+weights the student SVM comes within 0.003 AP of softmax regression, and a
+small regularized network (16 hidden units) ties it. Without class weights the
+SVM collapses to "everyone stays" (AP about 0.27): the hinge loss charges
+nothing beyond the margin, so on imbalanced, overlapping data its exact optimum
+has almost no weights. Every course family now reaches the same ceiling of
+AP about 0.39, strong evidence that the limit is the data, not the algorithm.
 
 ### Getting the data
 
@@ -146,7 +154,9 @@ probabilities = model.predict_proba(X_test)
 4. ~~Engagement segmentation~~ done: three stable segments found without the
    churn label; occasional users churn at about 37% versus about 13% for
    steady users.
-5. Linear SVM (lecture 11) and a small neural network (lecture 12).
+5. ~~Linear SVM and neural network (lectures 11-12)~~ done: both tie the
+   linear baseline once set up for imbalance; every family meets the same
+   ceiling.
 6. Model selection across families (lecture 16), with calibration and
    confusion-matrix checks, then promotion into the API with input
    monitoring (lecture 17).

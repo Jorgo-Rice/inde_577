@@ -203,7 +203,8 @@ class RandomForest(ClassifierMixin, BaseEstimator):
     def predict(self, features: ArrayLike) -> NDArray[np.generic]:
         """Return the class with the highest averaged probability."""
 
-        return self.classes_[np.argmax(self.predict_proba(features), axis=1)]
+        probabilities = self.predict_proba(features)  # checks the model is fitted
+        return self.classes_[np.argmax(probabilities, axis=1)]
 
 
 class GradientBoostingBinaryClassifier(ClassifierMixin, BaseEstimator):
@@ -358,7 +359,8 @@ class GradientBoostingBinaryClassifier(ClassifierMixin, BaseEstimator):
     def predict(self, features: ArrayLike) -> NDArray[np.generic]:
         """Return the more probable class."""
 
-        return self.classes_[(self.decision_function(features) > 0).astype(int)]
+        scores = self.decision_function(features)  # checks the model is fitted
+        return self.classes_[(scores > 0).astype(int)]
 
     def stump_contribution(
         self, feature: int, values: ArrayLike
