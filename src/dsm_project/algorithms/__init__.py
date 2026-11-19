@@ -8,8 +8,10 @@ from dsm_project.algorithms.registry import (
     registered_student_algorithms,
 )
 from dsm_project.algorithms.student import (
+    PCA,
     ClassificationTree,
     GradientBoostingBinaryClassifier,
+    KMeans,
     KNearestNeighborsClassifier,
     RandomForest,
     RegressionTree,
@@ -21,9 +23,11 @@ __all__ = [
     "BatchLinearRegressor",
     "ClassificationTree",
     "GradientBoostingBinaryClassifier",
+    "KMeans",
     "KNearestNeighborsClassifier",
     "MajorityClassifier",
     "MeanRegressor",
+    "PCA",
     "RandomForest",
     "RegressionTree",
     "SoftmaxRegression",

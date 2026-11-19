@@ -15,18 +15,18 @@ algorithms implemented from scratch as a tested Python package
 sealed test set, baselines, and uncertainty, served through a small
 reproducible system (versioned artifact, API, logs, CI).
 
-## Status — milestones 1, 2, 2A and 3 done
+## Status - milestones 1, 2, 2A, 3 and 4 done
 
 | Area | State |
 | --- | --- |
 | Product and data contract | [`docs/PRODUCT_CONTRACT.md`](docs/PRODUCT_CONTRACT.md), [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md), [ADR 0002](docs/decisions/0002-waze-churn-dataset.md) |
 | Data boundary | `WazeChurnAdapter`: checksum-pinned CSV, schema and range validation, 700 unlabeled users dropped; constructed CI fixture |
-| Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting), `KNearestNeighborsClassifier` (blocked search for large data), `ClassificationTree` and `RegressionTree` (CART with rule export), `RandomForest` (bagging, feature sampling, out-of-bag estimates), and `GradientBoostingBinaryClassifier` (log-loss boosting with Newton leaf steps) |
+| Student algorithms | `SoftmaxRegression` (gradient descent, L2, class weighting), `KNearestNeighborsClassifier` (blocked search for large data), `ClassificationTree` and `RegressionTree` (CART with rule export), `RandomForest` (bagging, feature sampling, out-of-bag estimates), `GradientBoostingBinaryClassifier` (log-loss boosting with Newton leaf steps), and `KMeans` / `PCA` (unsupervised) |
 | Evaluation | Shared holdout split, bootstrap intervals, F-beta threshold selection, `ThresholdedClassifier` |
 | Features and charts | `WazeFeatureBuilder` (13 engineered behavior features from my earlier analysis) and shared seaborn helpers in `dsm_project.visualization` (one theme, churn rates with 95% intervals) |
 | Tests | Analytic cases, gradient checks, failure modes, differential tests against scikit-learn, data-boundary tests |
-| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [04 — ensembles](notebooks/04-waze-churn-ensembles.ipynb); [05 — engineered features](notebooks/05-waze-engineered-features.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
-| Next | Engagement segmentation (k-means, PCA), linear SVM and neural network, cross-family model selection, promotion into the API and a refreshed Streamlit app |
+| Case studies | [02 — Waze churn: softmax vs k-NN](notebooks/02-waze-churn-softmax-vs-knn.ipynb); [03 — decision tree](notebooks/03-waze-churn-decision-tree.ipynb); [04 — ensembles](notebooks/04-waze-churn-ensembles.ipynb); [05 — engineered features](notebooks/05-waze-engineered-features.ipynb); [06 — user segments](notebooks/06-waze-user-segments.ipynb); [01 — wine](notebooks/01-wine-cultivar-softmax-vs-knn.ipynb) (algorithm verification on clean data) |
+| Next | Linear SVM and neural network, cross-family model selection, promotion into the API and a refreshed Streamlit app |
 
 ### Headline result (sealed test set, 3,575 users)
 
@@ -68,6 +68,15 @@ about 35% and make up close to half of all churners. Adding the features to
 the models does not improve ranking (softmax loses about 0.007 AP), because
 they re-express the raw activity and drive counts. So the models keep the raw
 features, and the segments become the PM-facing explanation layer.
+
+**User segments (development data only).** Student k-means on log-scaled usage,
+without the churn label, finds three stable segments (bootstrap ARI about 0.97):
+occasional users (about 20%, median 3 active days), steady light users, and
+steady heavy users. Auditing with churn afterwards, **occasional users churn at
+about 37% versus about 13% for both steady segments**, even though heavy users
+log six times the sessions of light users: frequency, not volume, drives
+retention. Clusters are weakly separated (silhouette about 0.17), so the
+segments divide a continuum rather than discover distinct populations.
 
 ### Getting the data
 
@@ -111,6 +120,9 @@ probabilities = model.predict_proba(X_test)
 | --- | --- |
 | `src/dsm_project/algorithms/student/` | Student-authored algorithms (`logistic.py`, `neighbors.py`) |
 | `src/dsm_project/data/waze.py` | Waze data boundary: validation, cleaning, encoding |
+| `src/dsm_project/features.py` | Engineered behavior features (`WazeFeatureBuilder`) |
+| `src/dsm_project/segments.py` | Named behavior segments (`UserSegmenter`, student k-means) |
+| `src/dsm_project/visualization.py` | Shared seaborn theme and chart helpers |
 | `src/dsm_project/algorithms/registry.py` | The registry that connects student code to experiments |
 | `src/dsm_project/experiments/` | Shared split and evaluation boundary, scikit-learn reference models |
 | `src/dsm_project/evaluation/` | Bootstrap uncertainty, threshold selection, comparison tables |
@@ -131,7 +143,9 @@ probabilities = model.predict_proba(X_test)
    stumps tie the linear baseline.
 3. ~~Engineered features~~ done: clear PM segments (churn from about 5% to
    35%) but no ranking gain, so models keep the raw features.
-4. Engagement segmentation with k-means and PCA.
+4. ~~Engagement segmentation~~ done: three stable segments found without the
+   churn label; occasional users churn at about 37% versus about 13% for
+   steady users.
 5. Linear SVM (lecture 11) and a small neural network (lecture 12).
 6. Model selection across families (lecture 16), with calibration and
    confusion-matrix checks, then promotion into the API with input

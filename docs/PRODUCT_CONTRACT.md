@@ -43,8 +43,8 @@ Details are in [`DATASET_CARD.md`](DATASET_CARD.md).
 | Ensembles | Churn risk | Yes | Bagging and boosting reduce single-tree variance. Random forest reaches AP ≈ 0.38; boosted stumps tie softmax at ≈ 0.39; deeper boosting is worse, so the signal is additive. Boosted stumps go forward to final model selection; scikit-learn's implementations serve as trusted references | `RandomForest`, `GradientBoostingBinaryClassifier`, notebook 04 |
 | Support vector machines and kernels | Churn risk | Optional | Applicable, but kernel SVMs scale poorly to 10k+ rows and give no calibrated probabilities without extra fitting | Decide after trees |
 | Neural networks | Churn risk | Optional | Applicable; only worth adding if trees show non-linear signal that linear models miss | Decide after trees |
-| Clustering | Engagement segments | Yes (planned) | k-means on standardized usage to find segments; churn labels used only to audit segments | Planned |
-| Dimensionality reduction | Engagement segments | Yes (planned) | PCA to visualize and compress correlated usage counts before clustering | Planned |
+| Clustering | Engagement segments | Yes | k-means on log-scaled, standardized usage; three stable segments (silhouette about 0.17, bootstrap ARI about 0.97); churn used only to audit them (37% vs 13%) | `KMeans`, `UserSegmenter`, notebook 06 |
+| Dimensionality reduction | Engagement segments | Yes | PCA shows three usage directions (volume, frequency, distance) and no low-dimensional shortcut (two components explain 44%); used to visualize segments | `PCA`, notebook 06 |
 
 ## Evaluation contract
 

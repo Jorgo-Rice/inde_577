@@ -59,7 +59,9 @@ def test_student_registry_exposes_only_explicit_implementations() -> None:
         "batch_linear_regression",
         "decision_tree",
         "gradient_boosting",
+        "k_means",
         "k_nearest_neighbors",
+        "pca",
         "random_forest",
         "softmax_regression",
     )
