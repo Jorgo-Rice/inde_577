@@ -69,8 +69,8 @@ Details are in [`DATASET_CARD.md`](DATASET_CARD.md).
 | Interface | Current state |
 | --- | --- |
 | Data boundary | `WazeChurnAdapter` (`configs/waze.toml`), checksum-verified |
-| Training | Notebook 02 for now; promotion to `scripts/train.py` planned |
-| Artifact | Template bundle format; Waze model not yet promoted |
+| Training | `scripts/train_churn_model.py` (fits on development users, scores the sealed test set once) |
+| Artifact | `artifacts/student-softmax-churn-1.0.0/`: model plus metadata (threshold policy, test metrics, data checksum, source revision) |
 | API | Template FastAPI service; churn-risk endpoint planned |
 | Monitoring | Template structured logs; input-range checks planned |
 | Rollback | Previous artifact version (planned with promotion) |

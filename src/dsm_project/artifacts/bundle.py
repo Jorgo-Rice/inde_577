@@ -30,8 +30,15 @@ def save_bundle(
     dataset: ProjectDataset,
     config: ProjectConfig,
     directory: str | Path,
+    *,
+    extra_metadata: dict[str, Any] | None = None,
 ) -> Path:
-    """Write a model and human-readable metadata into one artifact directory."""
+    """Write a model and human-readable metadata into one artifact directory.
+
+    ``extra_metadata`` adds project-specific fields (for example a decision
+    threshold, data checksum, or test results). It may not overwrite the
+    standard fields, so every bundle keeps the same core contract.
+    """
 
     output = Path(directory)
     output.mkdir(parents=True, exist_ok=True)
@@ -52,6 +59,11 @@ def save_bundle(
         "configuration": str(config.path),
         "python_version": platform.python_version(),
     }
+    if extra_metadata:
+        clashes = set(extra_metadata) & set(metadata)
+        if clashes:
+            raise ValueError(f"extra_metadata may not overwrite: {sorted(clashes)}")
+        metadata.update(extra_metadata)
     metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
     return output
 
